@@ -4,7 +4,11 @@ const express = require('express')
 const app = express()
 
 app.get('/', function (req, res) {
-  res.send('Hello World')
+  res.send('Instructions:\n 1. use post to sumbit text in JSON: {"text":"some VTT"}');
+})
+
+app.post('/', function (req, res) {
+  res.send({"text":"some VTT"});
 })
 
 app.listen(4000)
