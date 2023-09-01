@@ -20,39 +20,7 @@ const myVtt = "1\n"+
 
 "2\n"+
 "00:08:23.130 --> 00:08:24.510\n"+
-"Marcus Verri: hey? That's going to hear me.\n"+
-
-"3\n"+
-"00:08:24.880 --> 00:08:28.830\n"+
-"Alex Goulding: Yeah, yeah. All good. Thanks.\n"+
-
-"4\n"+
-"00:08:29.420 --> 00:08:31.990\n"+
-"Marcus Verri: So I'm: a little late before I tell the journey. I mean.\n"+
-
-"5\n"+
-"00:08:32.990 --> 00:08:34.150\n"+
-"Marcus Verri: you Won't: Believe it.\n"+
-
-"6\n"+
-"00:08:34.720 --> 00:08:35.679\n"+
-"Alex Goulding: You okay.\n"+
-
-"7\n"+
-"00:08:35.900 --> 00:08:51.300\n"+
-"Marcus Verri: Yeah. Yeah, All good. But I am. I'm here in London for the event. and my dogs here because you couldn't take her to Spain. So i'm taking a chance to take her with me. And it's a really long journey. So basically i'm really close to the city airport.\n"+
-
-"8\n"+
-"00:08:52.250 --> 00:08:59.950\n"+
-"Marcus Verri: My dogs close to the city center. So i'm here right now, because we need to get all the documentation sorted so we can cross the border.\n"+
-
-"9\n"+
-"00:09:00.110 --> 00:09:05.250\n"+
-"Marcus Verri: Oh, Well, I you can drive you, fly or drop. I'm. Car pulling to Paris.\n"+
-
-"10\n"+
-"00:09:06.640 --> 00:09:09.470\n"+
-"Marcus Verri: who is the dog, and then i'm sleeping over\n";
+"Marcus Verri: hey? That's going to hear me.";
 
 
 app.get('/', function (req, res) {
@@ -61,44 +29,73 @@ app.get('/', function (req, res) {
 
 app.post('/', function (req, res) {
     
+    //the chunks
+    var chunkArray = {
+      chunks: []
+    };
+
+    //all vtts
     var vttArray = {
       vtts: []
     };
-    console.log(req.body.toString());
     
     // get text
-    var text = req.body.text;
+    const text = req.body.text;
     console.log(text);
     var myText = ""+text;
+
+    // get chunking_strategy
+    const chunking_strategy = req.body.chunking_strategy;
+    console.log("chunking_strategy", chunking_strategy);
+    var myChunkingStrategy = ""+chunking_strategy;
+    
+    // get chunk_size
+    const CHUNK_SIZE = req.body.chunk_size;
+    console.log("chunk_size ", CHUNK_SIZE);
+    //const myChunkSize = 0+chunk_size;
+
+    // get overlap
+    const overlap = req.body.overlap;
+    console.log("overlap ", overlap);
+    var myOverlap = 0+overlap;
 
     // length of the record chars
 
     var allCharLength = myText.length;
     console.log("text length: ", allCharLength);
-    var WordLength = 0;
+    var wordLength = 0; //total length in words
   
+    //wordChunk - how many words in the chunk
+    var wordChunk = 0;
+    //textChunk - all text in the chunk
+    var textChunk = "";
+
+    //checking if mytext is fine for chunking
     while (myText != "" && myText != null) {  
       // call chunking
       var myTextCharLength = myText.length;
       // find first chunk
       var positionOfEOL = myText.indexOf("\n\n");
-      console.log("position of double EOL ", positionOfEOL);
-      // if exists 
+      var wordCount = 0; 
+      var aChunk = "";
+
+      //console.log("position of double EOL ", positionOfEOL);
+      // if EOL exists 
       if (0 <= positionOfEOL) {
-        var aChunk = myText.substring(0, positionOfEOL);
+        aChunk = myText.substring(0, positionOfEOL);
         var aChunkLength = aChunk.length;
         console.log(aChunk);
+        
         //how many words are in the chunk?
-        var words = 3; //all EOL
+        wordCount = 3; //all EOL
         var spacePos = 0;
-
         while (spacePos >= 0) {
           spacePos = aChunk.indexOf(" ", spacePos+1);
           if(spacePos>0) {
-            words++;
+            wordCount++;
           }
         }
-        console.log("words: ", words);
+        //console.log("wordCount: ", wordCount);
 
         // add it to the chunk array
         var myVttChunk = {
@@ -108,7 +105,7 @@ app.post('/', function (req, res) {
           //VTT name
           //VTT utterance
           //count the words only
-          'words' : words,
+          'words' : wordCount,
           //entire record
           'size' : aChunkLength,
         };
@@ -117,23 +114,23 @@ app.post('/', function (req, res) {
         myText = myText.substring(positionOfEOL+2,myTextCharLength);
 
 
-      } else {
+      } else { //EOL -1
           //if no more chunks
           // add the last chunk to array
-          var aChunk = myText;
+          aChunk = myText;
           var aChunkLength = aChunk.length;
           console.log(aChunk);
+          
           //how many words are in the chunk?
-          var words = 3; //all EOL
+          wordCount = 3; //all EOL
           var spacePos = 0;
-
           while (spacePos >= 0) {
             spacePos = aChunk.indexOf(" ", spacePos+1);
             if(spacePos>0) {
-              words++;
+              wordCount++;
             }
           }
-          console.log("words: ", words);
+          console.log("wordCount: ", wordCount);
 
 
           // add it to the chunk array
@@ -144,7 +141,7 @@ app.post('/', function (req, res) {
             //VTT name
             //VTT utterance
             //count the words only
-            'words' : words,
+            'words' : wordCount,
             //entire record
             'size' : aChunkLength,
           };
@@ -152,30 +149,80 @@ app.post('/', function (req, res) {
           vttArray.vtts.push(myVttChunk);
           myText = "";
       }
-    }
+
+      //0 overlap
+      //check if no of chunkWords + words <= CHUNK_SIZE 
+      if(CHUNK_SIZE >= (wordChunk+wordCount)) {
+        //add wordCount to chunkWords
+        wordChunk = wordChunk+wordCount;
+        console.log("partial wordChunk: ", wordChunk);
         
+        //add text to textChunk
+        textChunk = textChunk + "\n\n" + aChunk;
+        console.log("partial textChunk: ", textChunk);
+      } else {
+        
+      //else
+        //add chunkText to chunkArray
+        var myChunk = {
+          'text' : textChunk,
+          //position of the VTT index
+          //VTT timestamp
+          //VTT name
+          //VTT utterance
+          //count the words only
+          'words' : wordChunk,
+          //entire record
+          'size' : textChunk.length,
+        };
+      
+        chunkArray.chunks.push(myChunk);
+        //restart textChunk and chunkWords with current
+        textChunk = aChunk;
+        wordChunk = wordCount;
+        //if chunk is bigger than chunk_size 
+            //throw too small chunk_size
+            //or just devide it 
+            //and attach it untill it is smaller...
+      }
+
+      //if that is the end of the string... ie. ""==myText, then wrap it up
+      if(""==myText){
+        var myChunk = {
+          'text' : textChunk,
+          //position of the VTT index
+          //VTT timestamp
+          //VTT name
+          //VTT utterance
+          //count the words only
+          'words' : wordChunk,
+          //entire record
+          'size' : textChunk.length,
+        };
+        chunkArray.chunks.push(myChunk);
+        console.log("final wordChunk: ", wordChunk);
+        console.log("final textChunk: ", textChunk);
+    
+      }
+
+    } //end of while loop for getting all records
+    /*    
     for (var i = 0; i <vttArray.vtts.length; i++) {
       var textOfVtt = vttArray.vtts[i].text;
       var wordsInVtt = vttArray.vtts[i].words;
       console.log(i, "vtt: ", textOfVtt);
       console.log(i, "WORDS: ", wordsInVtt);
     }    
-  
-    
-    
-    
-    
-
-    //"1\n"+
-    //"00:08:14.680 --> 00:08:16.430\n"+
-    //"Marcus Verri: The\n\n"
-
-    
-    //while
-
-
-        
-    res.send({"chunks":vttArray});
+    */
+    //getting all chunks now
+    for (var i = 0; i <chunkArray.chunks.length; i++) {
+      var textOfChunk = chunkArray.chunks[i].text;
+      var wordsInChunk = chunkArray.chunks[i].words;
+      console.log(i, "chunk: ", textOfChunk);
+      console.log(i, "WORDS: ", wordsInChunk);
+    } 
+           
+    res.send({"chunks":chunkArray});
   })
 
 app.post('/test', function (req, res) {
