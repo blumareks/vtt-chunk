@@ -1,7 +1,18 @@
 // get express
 
-const express = require('express')
-const app = express()
+const express = require('express');
+const app = express();
+const PORT = 4000;
+var tokens = 3000;
+
+var bodyParser = require("body-parser");
+app.use(bodyParser.urlencoded({extended:false}));
+app.use(bodyParser.json());
+
+
+
+// manipulate 0-n overlap
+// spit json with chunks
 
 const myVtt = "1\n"+
 "00:08:14.680 --> 00:08:16.430\n"+
@@ -49,12 +60,129 @@ app.get('/', function (req, res) {
 })
 
 app.post('/', function (req, res) {
+    
+    var vttArray = {
+      vtts: []
+    };
+    console.log(req.body.toString());
+    
+    // get text
+    var text = req.body.text;
+    console.log(text);
+    var myText = ""+text;
+
+    // length of the record chars
+
+    var allCharLength = myText.length;
+    console.log("text length: ", allCharLength);
+    var WordLength = 0;
+  
+    while (myText != "" && myText != null) {  
+      // call chunking
+      var myTextCharLength = myText.length;
+      // find first chunk
+      var positionOfEOL = myText.indexOf("\n\n");
+      console.log("position of double EOL ", positionOfEOL);
+      // if exists 
+      if (0 <= positionOfEOL) {
+        var aChunk = myText.substring(0, positionOfEOL);
+        var aChunkLength = aChunk.length;
+        console.log(aChunk);
+        //how many words are in the chunk?
+        var words = 3; //all EOL
+        var spacePos = 0;
+
+        while (spacePos >= 0) {
+          spacePos = aChunk.indexOf(" ", spacePos+1);
+          if(spacePos>0) {
+            words++;
+          }
+        }
+        console.log("words: ", words);
+
+        // add it to the chunk array
+        var myVttChunk = {
+          'text' : aChunk,
+          //position of the VTT index
+          //VTT timestamp
+          //VTT name
+          //VTT utterance
+          //count the words only
+          'words' : words,
+          //entire record
+          'size' : aChunkLength,
+        };
+        //add it to a list
+        vttArray.vtts.push(myVttChunk);
+        myText = myText.substring(positionOfEOL+2,myTextCharLength);
+
+
+      } else {
+          //if no more chunks
+          // add the last chunk to array
+          var aChunk = myText;
+          var aChunkLength = aChunk.length;
+          console.log(aChunk);
+          //how many words are in the chunk?
+          var words = 3; //all EOL
+          var spacePos = 0;
+
+          while (spacePos >= 0) {
+            spacePos = aChunk.indexOf(" ", spacePos+1);
+            if(spacePos>0) {
+              words++;
+            }
+          }
+          console.log("words: ", words);
+
+
+          // add it to the chunk array
+          var myVttChunk = {
+            'text' : aChunk,
+            //position of the VTT index
+            //VTT timestamp
+            //VTT name
+            //VTT utterance
+            //count the words only
+            'words' : words,
+            //entire record
+            'size' : aChunkLength,
+          };
+          //add it to a list
+          vttArray.vtts.push(myVttChunk);
+          myText = "";
+      }
+    }
+        
+    for (var i = 0; i <vttArray.vtts.length; i++) {
+      var textOfVtt = vttArray.vtts[i].text;
+      var wordsInVtt = vttArray.vtts[i].words;
+      console.log(i, "vtt: ", textOfVtt);
+      console.log(i, "WORDS: ", wordsInVtt);
+    }    
+  
+    
+    
+    
+    
+
+    //"1\n"+
+    //"00:08:14.680 --> 00:08:16.430\n"+
+    //"Marcus Verri: The\n\n"
+
+    
+    //while
+
+
+        
+    res.send({"chunks":vttArray});
+  })
+
+app.post('/test', function (req, res) {
   res.send({"text":myVtt});
 })
 
-app.listen(4000)
+app.listen(4000);
+console.log("listening on port " + PORT);
 
 
-// get text
-// manipulate 0-n overlap
-// spit json with chunks
