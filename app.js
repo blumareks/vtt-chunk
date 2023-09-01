@@ -1,9 +1,8 @@
 // get express
-
-const express = require('express');
+const express = require("express");
 const app = express();
 const PORT = 4000;
-var tokens = 3000;
+//var tokens = 3000;
 
 var bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended:false}));
@@ -17,7 +16,6 @@ app.use(bodyParser.json());
 const myVtt = "1\n"+
 "00:08:14.680 --> 00:08:16.430\n"+
 "Marcus Verri: The\n\n"+
-
 "2\n"+
 "00:08:23.130 --> 00:08:24.510\n"+
 "Marcus Verri: hey? That's going to hear me.";
@@ -60,7 +58,6 @@ app.post('/', function (req, res) {
     var myOverlap = 0+overlap;
 
     // length of the record chars
-
     var allCharLength = myText.length;
     console.log("text length: ", allCharLength);
     var wordLength = 0; //total length in words
@@ -151,8 +148,8 @@ app.post('/', function (req, res) {
       }
 
       //0 overlap
-      //check if no of chunkWords + words <= CHUNK_SIZE 
-      if(CHUNK_SIZE >= (wordChunk+wordCount)) {
+      //check if (no of chunkWords + words) <= CHUNK_SIZE 
+      if(CHUNK_SIZE > (wordChunk+wordCount)) {
         //add wordCount to chunkWords
         wordChunk = wordChunk+wordCount;
         console.log("partial wordChunk: ", wordChunk);
@@ -161,15 +158,9 @@ app.post('/', function (req, res) {
         textChunk = textChunk + "\n\n" + aChunk;
         console.log("partial textChunk: ", textChunk);
       } else {
-        
-      //else
         //add chunkText to chunkArray
         var myChunk = {
           'text' : textChunk,
-          //position of the VTT index
-          //VTT timestamp
-          //VTT name
-          //VTT utterance
           //count the words only
           'words' : wordChunk,
           //entire record
@@ -190,10 +181,6 @@ app.post('/', function (req, res) {
       if(""==myText){
         var myChunk = {
           'text' : textChunk,
-          //position of the VTT index
-          //VTT timestamp
-          //VTT name
-          //VTT utterance
           //count the words only
           'words' : wordChunk,
           //entire record
@@ -206,6 +193,7 @@ app.post('/', function (req, res) {
       }
 
     } //end of while loop for getting all records
+    
     /*    
     for (var i = 0; i <vttArray.vtts.length; i++) {
       var textOfVtt = vttArray.vtts[i].text;
@@ -218,12 +206,13 @@ app.post('/', function (req, res) {
     for (var i = 0; i <chunkArray.chunks.length; i++) {
       var textOfChunk = chunkArray.chunks[i].text;
       var wordsInChunk = chunkArray.chunks[i].words;
-      console.log(i, "chunk: ", textOfChunk);
       console.log(i, "WORDS: ", wordsInChunk);
+      console.log(i, "chunk: ", textOfChunk);
+      wordLength = wordLength + wordsInChunk;
     } 
            
-    res.send({"chunks":chunkArray});
-  })
+    res.send({"text":chunkArray, "words":wordLength});
+})
 
 app.post('/test', function (req, res) {
   res.send({"text":myVtt});
