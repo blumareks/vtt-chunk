@@ -42,6 +42,12 @@ print(response.text)
 
 ## Response
 
+```
+   The part - a chunk - of a larger text:       'text' : textChunk,
+   The no of words in a chunk:                  'words' : wordChunk,
+   The no of chars in a chunk:                  'size' : textChunk.length,
+```
+
 ```JSON
 
 {
